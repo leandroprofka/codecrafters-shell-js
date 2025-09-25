@@ -6,9 +6,11 @@ const rl = readline.createInterface({
 });
 
 // Uncomment this block to pass the first stage
-while (true) {
+const prompt = () => {
   rl.question("$ ", (answer) => {
     console.log(`${answer}: command not found`);
-    rl.close();
+    prompt();
   });
-}
+};
+
+prompt();
