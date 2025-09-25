@@ -7,5 +7,6 @@ const rl = readline.createInterface({
 
 // Uncomment this block to pass the first stage
 rl.question("$ ", (answer) => {
+  console.log(`${answer} not found.`);
   rl.close();
 });
