@@ -28,9 +28,9 @@ const prompt = () => {
       const target = args[0];
 
       if (builtInCommands.includes(target)) {
-        console.log(`${target}: is a shell built-in`);
+        console.log(`${target} is a shell builtin`);
       } else {
-        console.log(`${target}: command not found`);
+        console.log(`${target}: not found`);
       }
       prompt();
       return;
