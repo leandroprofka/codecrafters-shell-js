@@ -1,5 +1,8 @@
 const readline = require("readline");
 
+const fs = require("fs");
+const path = require("path");
+
 const rl = readline.createInterface({
   input: process.stdin,
   output: process.stdout,
@@ -29,9 +32,25 @@ const prompt = () => {
 
       if (builtInCommands.includes(target)) {
         console.log(`${target} is a shell builtin`);
-      } else {
-        console.log(`${target}: not found`);
+        prompt();
+        return;
       }
+
+      const dirs = process.env.PATH.split(":");
+
+      for (const dir of dirs) {
+        const fullPath = path.join(dir, target);
+        try {
+          fs.accessSync(fullPath, fs.constants.X_OK);
+          console.log(`${target} is ${fullPath}`);
+          prompt();
+          return;
+        } catch (e) {
+          // not executable, continue searching
+        }
+      }
+
+      console.log(`${target}: not found`);
       prompt();
       return;
     }
