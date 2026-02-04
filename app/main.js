@@ -12,6 +12,16 @@ const prompt = () => {
       rl.close();
       return;
     }
+    const parts = answer.trim().split(" ");
+    const command = parts[0];
+    const args = parts.slice(1);
+
+    if (command === "echo") {
+      console.log(args.join(" "));
+      prompt();
+      return;
+    }
+
     console.log(`${answer}: command not found`);
     prompt();
   });
