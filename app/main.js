@@ -22,6 +22,20 @@ const prompt = () => {
       return;
     }
 
+    const builtInCommands = ["echo", "exit", "type"];
+
+    if (command === "type") {
+      const target = args[0];
+
+      if (builtInCommands.includes(target)) {
+        console.log(`${target}: is a shell built-in`);
+      } else {
+        console.log(`${target}: command not found`);
+      }
+      prompt();
+      return;
+    }
+
     console.log(`${answer}: command not found`);
     prompt();
   });
