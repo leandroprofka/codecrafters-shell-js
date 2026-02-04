@@ -1,4 +1,5 @@
 const readline = require("readline");
+const { spawnSync } = require("child_process");
 
 const fs = require("fs");
 const path = require("path");
@@ -55,8 +56,21 @@ const prompt = () => {
       return;
     }
 
-    console.log(`${answer}: command not found`);
+    const dirs = process.env.PATH.split(":");
+
+    for (const dir of dirs) {
+      const fullPath = path.join(dir, command);
+      try {
+        fs.accessSync(fullPath, fs.constants.X_OK);
+        const result = spawnSync(fullPath, args, { stdio: "inherit", argv0: command });
+        prompt();
+        return;
+      } catch (e) { }
+    }
+
+    console.log(`${command}: command not found`);
     prompt();
+
   });
 };
 
