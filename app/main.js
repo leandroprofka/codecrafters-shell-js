@@ -9,6 +9,46 @@ const rl = readline.createInterface({
   output: process.stdout,
 });
 
+
+function parseInput(input) {
+  const args = [];
+  let current = "";
+  let inSingleQuotes = false;
+  let inDoubleQuotes = false;
+
+  for (let i = 0; i < input.length; i++) {
+    const char = input[i];
+
+    if (char === "'") {
+      if (inDoubleQuotes) {
+        current += char;
+      } else {
+        inSingleQuotes = !inSingleQuotes;
+      }
+    } else if (char === '"') {
+      if (inSingleQuotes) {
+        current += char;
+      } else {
+        inDoubleQuotes = !inDoubleQuotes;
+      }
+    } else if (char === " " && !inSingleQuotes && !inDoubleQuotes) {
+      if (current.length > 0) {
+        args.push(current);
+        current = "";
+      }
+    } else {
+      current += char;
+    }
+  }
+
+  if (current.length > 0) {
+    args.push(current);
+  }
+
+  return args;
+}
+
+
 // Uncomment this block to pass the first stage
 const prompt = () => {
   rl.question("$ ", (answer) => {
@@ -16,7 +56,7 @@ const prompt = () => {
       rl.close();
       return;
     }
-    const parts = answer.trim().split(" ");
+    const parts = parseInput(answer.trim());
     const command = parts[0];
     const args = parts.slice(1);
 
