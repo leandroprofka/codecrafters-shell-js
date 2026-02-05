@@ -72,27 +72,43 @@ const prompt = () => {
     let args = parts.slice(1);
 
     let outputFile = null;
-    let redirectIndex = args.indexOf(">");
-    if (redirectIndex === -1) redirectIndex = args.indexOf("1>");
+    let appendOutput = false;
+    let redirectIndex = args.indexOf(">>");
+    if (redirectIndex === -1) redirectIndex = args.indexOf("1>>");
+    if (redirectIndex !== -1) {
+      appendOutput = true;
+    } else {
+      redirectIndex = args.indexOf(">");
+      if (redirectIndex === -1) redirectIndex = args.indexOf("1>");
+    }
     if (redirectIndex !== -1) {
       outputFile = args[redirectIndex + 1];
       args = args.filter((_, i) => i !== redirectIndex && i !== redirectIndex + 1);
     }
 
     let errorFile = null;
-    const errRedirectIndex = args.indexOf("2>");
+    let appendError = false;
+    let errRedirectIndex = args.indexOf("2>>");
+    if (errRedirectIndex !== -1) {
+      appendError = true;
+    } else {
+      errRedirectIndex = args.indexOf("2>");
+    }
     if (errRedirectIndex !== -1) {
       errorFile = args[errRedirectIndex + 1];
       args = args.filter((_, i) => i !== errRedirectIndex && i !== errRedirectIndex + 1);
     }
 
-    if (outputFile) fs.writeFileSync(outputFile, "");
-    if (errorFile) fs.writeFileSync(errorFile, "");
+    const writeOut = (file, data) => appendOutput ? fs.appendFileSync(file, data) : fs.writeFileSync(file, data);
+    const writeErr = (file, data) => appendError ? fs.appendFileSync(file, data) : fs.writeFileSync(file, data);
+
+    if (outputFile && !appendOutput) fs.writeFileSync(outputFile, "");
+    if (errorFile && !appendError) fs.writeFileSync(errorFile, "");
 
     if (command === "echo") {
       const output = args.join(" ");
       if (outputFile) {
-        fs.writeFileSync(outputFile, output + "\n");
+        writeOut(outputFile, output + "\n");
       } else {
         console.log(output);
       }
@@ -159,15 +175,15 @@ const prompt = () => {
         const stdoutPipe = outputFile ? "pipe" : "inherit";
         const stderrPipe = errorFile ? "pipe" : "inherit";
         const result = spawnSync(fullPath, args, { stdio: ["inherit", stdoutPipe, stderrPipe], argv0: command });
-        if (outputFile) fs.writeFileSync(outputFile, result.stdout);
-        if (errorFile) fs.writeFileSync(errorFile, result.stderr);
+        if (outputFile) writeOut(outputFile, result.stdout);
+        if (errorFile) writeErr(errorFile, result.stderr);
         prompt();
         return;
       } catch (e) { }
     }
 
     if (errorFile) {
-      fs.writeFileSync(errorFile, `${command}: command not found\n`);
+      writeErr(errorFile, `${command}: command not found\n`);
     } else {
       console.log(`${command}: command not found`);
     }
