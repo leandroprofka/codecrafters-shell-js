@@ -34,6 +34,14 @@ function parseInput(input) {
     } else if (char === "\\" && !inSingleQuotes && !inDoubleQuotes) {
       i++;
       current += input[i];
+    } else if (char === "\\" && inDoubleQuotes) {
+      const next = input[i + 1];
+      if (next === "\\" || next === "$" || next === '"' || next === "\n") {
+        i++;
+        current += next;
+      } else {
+        current += char;
+      }
     } else if (char === " " && !inSingleQuotes && !inDoubleQuotes) {
       if (current.length > 0) {
         args.push(current);
