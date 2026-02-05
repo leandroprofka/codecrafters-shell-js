@@ -31,6 +31,9 @@ function parseInput(input) {
       } else {
         inDoubleQuotes = !inDoubleQuotes;
       }
+    } else if (char === "\\" && !inSingleQuotes && !inDoubleQuotes) {
+      i++;
+      current += input[i];
     } else if (char === " " && !inSingleQuotes && !inDoubleQuotes) {
       if (current.length > 0) {
         args.push(current);
