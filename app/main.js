@@ -3,6 +3,7 @@ const { spawnSync, spawn } = require("child_process");
 
 const fs = require("fs");
 const path = require("path");
+const { PassThrough } = require("stream");
 
 const builtInCommands = ["echo", "exit", "type", "pwd", "cd"];
 
@@ -14,6 +15,19 @@ function findExecutable(name) {
       fs.accessSync(fullPath, fs.constants.X_OK);
       return fullPath;
     } catch (e) { }
+  }
+  return null;
+}
+
+function getBuiltinOutput(cmd, args) {
+  if (cmd === "echo") return args.join(" ");
+  if (cmd === "pwd") return process.cwd();
+  if (cmd === "type") {
+    const target = args[0];
+    if (builtInCommands.includes(target)) return `${target} is a shell builtin`;
+    const execPath = findExecutable(target);
+    if (execPath) return `${target} is ${execPath}`;
+    return `${target}: not found`;
   }
   return null;
 }
@@ -167,28 +181,50 @@ const prompt = () => {
         const segParts = parseInput(segments[i]);
         const cmd = segParts[0];
         const cmdArgs = segParts.slice(1);
-        const fullPath = findExecutable(cmd);
+        const isBuiltin = builtInCommands.includes(cmd);
+        const fullPath = isBuiltin ? null : findExecutable(cmd);
 
-        if (!fullPath) {
+        if (!isBuiltin && !fullPath) {
           console.log(`${cmd}: command not found`);
           prompt();
           return;
         }
 
-        const stdinOption = i === 0 ? "inherit" : procs[i - 1].stdout;
-        const stdoutOption = i === segments.length - 1 ? "inherit" : "pipe";
+        const prevIsBuiltin = i > 0 && procs[i - 1].isBuiltin;
+        const stdinOption = i === 0 ? "inherit" : (prevIsBuiltin ? "pipe" : procs[i - 1].stdout);
+        const isLast = i === segments.length - 1;
+        const stdoutOption = isLast ? "inherit" : "pipe";
 
-        const proc = spawn(fullPath, cmdArgs, {
-          stdio: [stdinOption, stdoutOption, "inherit"],
-          argv0: cmd,
-        });
-        procs.push(proc);
+        if (isBuiltin) {
+          const output = getBuiltinOutput(cmd, cmdArgs);
+          if (isLast) {
+            console.log(output);
+            procs.push({ stdout: null, isBuiltin: true });
+          } else {
+            const pt = new PassThrough();
+            pt.end(output + "\n");
+            procs.push({ stdout: pt, isBuiltin: true });
+          }
+        } else {
+          const proc = spawn(fullPath, cmdArgs, {
+            stdio: [stdinOption, stdoutOption, "inherit"],
+            argv0: cmd,
+          });
+          if (prevIsBuiltin && procs[i - 1].stdout) {
+            procs[i - 1].stdout.pipe(proc.stdin);
+          }
+          procs.push(proc);
+        }
       }
 
       const lastProc = procs[procs.length - 1];
-      lastProc.on("close", () => {
+      if (lastProc.on) {
+        lastProc.on("close", () => {
+          prompt();
+        });
+      } else {
         prompt();
-      });
+      }
       return;
     }
 
