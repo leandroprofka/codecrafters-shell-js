@@ -6,8 +6,29 @@ const path = require("path");
 
 const builtInCommands = ["echo", "exit", "type", "pwd", "cd"];
 
+function getExecutablesFromPath(prefix) {
+  const dirs = (process.env.PATH || "").split(":");
+  const matches = new Set();
+  for (const dir of dirs) {
+    try {
+      const files = fs.readdirSync(dir);
+      for (const file of files) {
+        if (file.startsWith(prefix)) {
+          try {
+            fs.accessSync(path.join(dir, file), fs.constants.X_OK);
+            matches.add(file);
+          } catch (e) {}
+        }
+      }
+    } catch (e) {}
+  }
+  return [...matches];
+}
+
 function completer(line) {
-  const hits = builtInCommands.filter(cmd => cmd.startsWith(line));
+  const builtinHits = builtInCommands.filter(cmd => cmd.startsWith(line));
+  const externalHits = getExecutablesFromPath(line);
+  const hits = [...new Set([...builtinHits, ...externalHits])].sort();
   if (hits.length === 0) {
     process.stdout.write("\x07");
     return [[], line];
