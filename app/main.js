@@ -63,7 +63,12 @@ const prompt = () => {
     }
 
     if (command === "cd") {
-      const targetDir = args[0];
+      let targetDir = args[0];
+
+      if (targetDir === "~" || targetDir.startsWith("~/")) {
+        targetDir = targetDir.replace("~", process.env.HOME);
+      }
+
       try {
         process.chdir(targetDir);
       } catch (e) {
