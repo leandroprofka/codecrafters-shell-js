@@ -28,6 +28,17 @@ function getExecutablesFromPath(prefix) {
 let lastTabLine = null;
 let tabCount = 0;
 
+function longestCommonPrefix(strings) {
+  if (strings.length === 0) return "";
+  let prefix = strings[0];
+  for (let i = 1; i < strings.length; i++) {
+    while (!strings[i].startsWith(prefix)) {
+      prefix = prefix.slice(0, -1);
+    }
+  }
+  return prefix;
+}
+
 function completer(line) {
   const builtinHits = builtInCommands.filter(cmd => cmd.startsWith(line));
   const externalHits = getExecutablesFromPath(line);
@@ -46,6 +57,13 @@ function completer(line) {
     return [[hits[0] + " "], line];
   }
 
+  const lcp = longestCommonPrefix(hits);
+  if (lcp.length > line.length) {
+    lastTabLine = null;
+    tabCount = 0;
+    return [[lcp], line];
+  }
+
   if (lastTabLine === line) {
     tabCount++;
   } else {
@@ -54,7 +72,6 @@ function completer(line) {
   }
 
   if (tabCount === 1) {
-
     process.stdout.write("\x07");
     return [[], line];
   }
