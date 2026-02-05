@@ -8,6 +8,10 @@ const builtInCommands = ["echo", "exit", "type", "pwd", "cd"];
 
 function completer(line) {
   const hits = builtInCommands.filter(cmd => cmd.startsWith(line));
+  if (hits.length === 0) {
+    process.stdout.write("\x07");
+    return [[], line];
+  }
   if (hits.length === 1) {
     return [[hits[0] + " "], line];
   }
