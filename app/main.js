@@ -4,9 +4,20 @@ const { spawnSync } = require("child_process");
 const fs = require("fs");
 const path = require("path");
 
+const builtInCommands = ["echo", "exit", "type", "pwd", "cd"];
+
+function completer(line) {
+  const hits = builtInCommands.filter(cmd => cmd.startsWith(line));
+  if (hits.length === 1) {
+    return [[hits[0] + " "], line];
+  }
+  return [hits, line];
+}
+
 const rl = readline.createInterface({
   input: process.stdin,
   output: process.stdout,
+  completer,
 });
 
 
@@ -115,8 +126,6 @@ const prompt = () => {
       prompt();
       return;
     }
-
-    const builtInCommands = ["echo", "exit", "type", "pwd", "cd"];
 
     if (command === "type") {
       const target = args[0];
