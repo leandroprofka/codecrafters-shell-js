@@ -1,10 +1,22 @@
 const readline = require("readline");
-const { spawnSync } = require("child_process");
+const { spawnSync, spawn } = require("child_process");
 
 const fs = require("fs");
 const path = require("path");
 
 const builtInCommands = ["echo", "exit", "type", "pwd", "cd"];
+
+function findExecutable(name) {
+  const dirs = (process.env.PATH || "").split(":");
+  for (const dir of dirs) {
+    const fullPath = path.join(dir, name);
+    try {
+      fs.accessSync(fullPath, fs.constants.X_OK);
+      return fullPath;
+    } catch (e) { }
+  }
+  return null;
+}
 
 function getExecutablesFromPath(prefix) {
   const dirs = (process.env.PATH || "").split(":");
@@ -146,6 +158,40 @@ const prompt = () => {
       rl.close();
       return;
     }
+
+    if (answer.includes("|")) {
+      const segments = answer.split("|").map(s => s.trim());
+      const procs = [];
+
+      for (let i = 0; i < segments.length; i++) {
+        const segParts = parseInput(segments[i]);
+        const cmd = segParts[0];
+        const cmdArgs = segParts.slice(1);
+        const fullPath = findExecutable(cmd);
+
+        if (!fullPath) {
+          console.log(`${cmd}: command not found`);
+          prompt();
+          return;
+        }
+
+        const stdinOption = i === 0 ? "inherit" : procs[i - 1].stdout;
+        const stdoutOption = i === segments.length - 1 ? "inherit" : "pipe";
+
+        const proc = spawn(fullPath, cmdArgs, {
+          stdio: [stdinOption, stdoutOption, "inherit"],
+          argv0: cmd,
+        });
+        procs.push(proc);
+      }
+
+      const lastProc = procs[procs.length - 1];
+      lastProc.on("close", () => {
+        prompt();
+      });
+      return;
+    }
+
     const parts = parseInput(answer.trim());
     const command = parts[0];
     let args = parts.slice(1);
