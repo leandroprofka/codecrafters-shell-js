@@ -17,26 +17,52 @@ function getExecutablesFromPath(prefix) {
           try {
             fs.accessSync(path.join(dir, file), fs.constants.X_OK);
             matches.add(file);
-          } catch (e) {}
+          } catch (e) { }
         }
       }
-    } catch (e) {}
+    } catch (e) { }
   }
   return [...matches];
 }
+
+let lastTabLine = null;
+let tabCount = 0;
 
 function completer(line) {
   const builtinHits = builtInCommands.filter(cmd => cmd.startsWith(line));
   const externalHits = getExecutablesFromPath(line);
   const hits = [...new Set([...builtinHits, ...externalHits])].sort();
+
   if (hits.length === 0) {
+    lastTabLine = null;
+    tabCount = 0;
     process.stdout.write("\x07");
     return [[], line];
   }
+
   if (hits.length === 1) {
+    lastTabLine = null;
+    tabCount = 0;
     return [[hits[0] + " "], line];
   }
-  return [hits, line];
+
+  if (lastTabLine === line) {
+    tabCount++;
+  } else {
+    lastTabLine = line;
+    tabCount = 1;
+  }
+
+  if (tabCount === 1) {
+
+    process.stdout.write("\x07");
+    return [[], line];
+  }
+
+  lastTabLine = null;
+  tabCount = 0;
+  process.stdout.write("\n" + hits.join("  ") + "\n$ " + line);
+  return [[], line];
 }
 
 const rl = readline.createInterface({
