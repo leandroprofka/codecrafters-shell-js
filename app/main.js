@@ -79,6 +79,16 @@ const prompt = () => {
       args = args.filter((_, i) => i !== redirectIndex && i !== redirectIndex + 1);
     }
 
+    let errorFile = null;
+    const errRedirectIndex = args.indexOf("2>");
+    if (errRedirectIndex !== -1) {
+      errorFile = args[errRedirectIndex + 1];
+      args = args.filter((_, i) => i !== errRedirectIndex && i !== errRedirectIndex + 1);
+    }
+
+    if (outputFile) fs.writeFileSync(outputFile, "");
+    if (errorFile) fs.writeFileSync(errorFile, "");
+
     if (command === "echo") {
       const output = args.join(" ");
       if (outputFile) {
@@ -146,18 +156,21 @@ const prompt = () => {
       const fullPath = path.join(dir, command);
       try {
         fs.accessSync(fullPath, fs.constants.X_OK);
-        if (outputFile) {
-          const result = spawnSync(fullPath, args, { stdio: ["inherit", "pipe", "inherit"], argv0: command });
-          fs.writeFileSync(outputFile, result.stdout);
-        } else {
-          spawnSync(fullPath, args, { stdio: "inherit", argv0: command });
-        }
+        const stdoutPipe = outputFile ? "pipe" : "inherit";
+        const stderrPipe = errorFile ? "pipe" : "inherit";
+        const result = spawnSync(fullPath, args, { stdio: ["inherit", stdoutPipe, stderrPipe], argv0: command });
+        if (outputFile) fs.writeFileSync(outputFile, result.stdout);
+        if (errorFile) fs.writeFileSync(errorFile, result.stderr);
         prompt();
         return;
       } catch (e) { }
     }
 
-    console.log(`${command}: command not found`);
+    if (errorFile) {
+      fs.writeFileSync(errorFile, `${command}: command not found\n`);
+    } else {
+      console.log(`${command}: command not found`);
+    }
     prompt();
 
   });
