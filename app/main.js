@@ -26,7 +26,7 @@ const prompt = () => {
       return;
     }
 
-    const builtInCommands = ["echo", "exit", "type"];
+    const builtInCommands = ["echo", "exit", "type", "pwd"];
 
     if (command === "type") {
       const target = args[0];
@@ -52,6 +52,12 @@ const prompt = () => {
       }
 
       console.log(`${target}: not found`);
+      prompt();
+      return;
+    }
+
+    if (command === "pwd") {
+      console.log(process.cwd());
       prompt();
       return;
     }
