@@ -26,7 +26,7 @@ const prompt = () => {
       return;
     }
 
-    const builtInCommands = ["echo", "exit", "type", "pwd"];
+    const builtInCommands = ["echo", "exit", "type", "pwd", "cd"];
 
     if (command === "type") {
       const target = args[0];
@@ -58,6 +58,17 @@ const prompt = () => {
 
     if (command === "pwd") {
       console.log(process.cwd());
+      prompt();
+      return;
+    }
+
+    if (command === "cd") {
+      const targetDir = args[0];
+      try {
+        process.chdir(targetDir);
+      } catch (e) {
+        console.log(`cd: no such file or directory: ${targetDir}`);
+      }
       prompt();
       return;
     }
