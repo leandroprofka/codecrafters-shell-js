@@ -69,10 +69,23 @@ const prompt = () => {
     }
     const parts = parseInput(answer.trim());
     const command = parts[0];
-    const args = parts.slice(1);
+    let args = parts.slice(1);
+
+    let outputFile = null;
+    let redirectIndex = args.indexOf(">");
+    if (redirectIndex === -1) redirectIndex = args.indexOf("1>");
+    if (redirectIndex !== -1) {
+      outputFile = args[redirectIndex + 1];
+      args = args.filter((_, i) => i !== redirectIndex && i !== redirectIndex + 1);
+    }
 
     if (command === "echo") {
-      console.log(args.join(" "));
+      const output = args.join(" ");
+      if (outputFile) {
+        fs.writeFileSync(outputFile, output + "\n");
+      } else {
+        console.log(output);
+      }
       prompt();
       return;
     }
@@ -97,9 +110,7 @@ const prompt = () => {
           console.log(`${target} is ${fullPath}`);
           prompt();
           return;
-        } catch (e) {
-          // not executable, continue searching
-        }
+        } catch (e) { }
       }
 
       console.log(`${target}: not found`);
@@ -135,7 +146,12 @@ const prompt = () => {
       const fullPath = path.join(dir, command);
       try {
         fs.accessSync(fullPath, fs.constants.X_OK);
-        const result = spawnSync(fullPath, args, { stdio: "inherit", argv0: command });
+        if (outputFile) {
+          const result = spawnSync(fullPath, args, { stdio: ["inherit", "pipe", "inherit"], argv0: command });
+          fs.writeFileSync(outputFile, result.stdout);
+        } else {
+          spawnSync(fullPath, args, { stdio: "inherit", argv0: command });
+        }
         prompt();
         return;
       } catch (e) { }
